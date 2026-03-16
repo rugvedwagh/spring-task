@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Todo</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #c8f135;
+      --accent-dim: #9ab82a;
+      --text: #f0f0f0;
+      --muted: #666;
+      --danger: #ff4d4d;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px;
+    }
+
+    .container { width: 100%; max-width: 520px; }
+
+    /* ── Header ── */
+    header { margin-bottom: 40px; }
+    header h1 {
+      font-family: 'DM Mono', monospace;
+      font-size: 2rem;
+      font-weight: 500;
+      letter-spacing: -1px;
+      color: var(--accent);
+    }
+    header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+    #user-email { color: var(--text); font-weight: 500; }
+
+    /* ── Auth Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── Inputs ── */
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+    input[type="email"], input[type="password"], input[type="text"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: var(--accent); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 10px 18px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: #0f0f0f; width: 100%; margin-top: 4px; }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      padding: 6px 12px;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid transparent; padding: 4px 8px; font-size: 0.8rem; }
+    .btn-danger:hover { border-color: var(--danger); }
+
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row .btn-primary { flex: 1; margin-top: 0; }
+
+    /* ── Switch between login/register ── */
+    .switch-link {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .switch-link span { color: var(--accent); cursor: pointer; }
+    .switch-link span:hover { text-decoration: underline; }
+
+    /* ── Auth error ── */
+    .error-msg {
+      background: #2a1111;
+      border: 1px solid #5a2020;
+      border-radius: 6px;
+      color: #ff8080;
+      font-size: 0.82rem;
+      padding: 8px 12px;
+      margin-top: 10px;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ── Todo App ── */
+    #app { display: none; }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .topbar .logout { font-size: 0.78rem; }
+
+    /* Add todo row */
+    .add-row { display: flex; gap: 8px; margin-bottom: 24px; }
+    .add-row input { flex: 1; }
+    .add-row .btn { white-space: nowrap; background: var(--accent); color: #0f0f0f; }
+    .add-row .btn:hover { opacity: 0.88; }
+
+    /* ── Todo list ── */
+    #todo-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .todo-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.2s, opacity 0.2s;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .todo-item.completed { opacity: 0.45; }
+    .todo-item.completed .todo-title { text-decoration: line-through; color: var(--muted); }
+
+    /* Checkbox */
+    .todo-check {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .todo-check.checked { background: var(--accent); border-color: var(--accent); }
+    .todo-check.checked::after { content: '✓'; font-size: 11px; color: #0f0f0f; font-weight: 700; }
+
+    .todo-title { flex: 1; font-size: 0.95rem; }
+
+    /* Inline edit */
+    .todo-edit-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      padding: 4px 8px;
+      outline: none;
+    }
+
+    .todo-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    /* ── Stats ── */
+    .stats {
+      margin-top: 20px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      text-align: right;
+    }
+    .stats span { color: var(--accent); }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 40px 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .empty .icon { font-size: 2rem; margin-bottom: 8px; }
+
+    /* ── Loading ── */
+    .loading { text-align: center; padding: 30px; color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>// todo</h1>
+    <p id="header-sub">sign in to manage your tasks</p>
+  </header>
+
+  <!-- ── AUTH ── -->
+  <div id="auth">
+    <div class="card">
+      <h2 id="auth-title">Login</h2>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="••••••" />
+      </div>
+      <button class="btn btn-primary" onclick="submitAuth()">Continue →</button>
+      <div class="error-msg" id="auth-error"></div>
+    </div>
+    <div class="switch-link" id="switch-link">
+      No account? <span onclick="toggleMode()">Register</span>
+    </div>
+  </div>
+
+  <!-- ── APP ── -->
+  <div id="app">
+    <div class="topbar">
+      <div style="font-size:0.82rem; color:var(--muted)">
+        logged in as <span id="user-email" style="color:var(--text)"></span>
+      </div>
+      <button class="btn btn-ghost logout" onclick="logout()">logout</button>
+    </div>
+
+    <div class="add-row">
+      <input type="text" id="new-todo" placeholder="What needs to be done?" onkeydown="if(event.key==='Enter') addTodo()" />
+      <button class="btn" onclick="addTodo()">+ Add</button>
+    </div>
+
+    <div id="todo-list"></div>
+    <div class="stats" id="stats"></div>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:8080/api';
+  let token = localStorage.getItem('token') || null;
+  let isLogin = true;
+  let editingId = null;
+
+  // ── Init ──
+  if (token) showApp();
+
+  function toggleMode() {
+    isLogin = !isLogin;
+    document.getElementById('auth-title').textContent = isLogin ? 'Login' : 'Register';
+    document.getElementById('switch-link').innerHTML = isLogin
+      ? `No account? <span onclick="toggleMode()">Register</span>`
+      : `Have an account? <span onclick="toggleMode()">Login</span>`;
+    clearError();
+  }
+
+  async function submitAuth() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+    if (!email || !password) return showError('Please fill in all fields');
+
+    const endpoint = isLogin ? '/auth/login' : '/auth/register';
+    try {
+      const res = await fetch(API + endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = data.error || data.password || data.email || 'Something went wrong';
+        return showError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
+      }
+      token = data.token;
+      localStorage.setItem('token', token);
+      showApp();
+    } catch (e) {
+      showError('Cannot reach server. Is the app running?');
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+  function clearError() {
+    document.getElementById('auth-error').classList.remove('visible');
+  }
+
+  function showApp() {
+    document.getElementById('auth').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      document.getElementById('user-email').textContent = payload.sub;
+    } catch {}
+    loadTodos();
+  }
+
+  function logout() {
+    token = null;
+    localStorage.removeItem('token');
+    document.getElementById('auth').style.display = 'block';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('auth-email').value = '';
+    document.getElementById('auth-password').value = '';
+  }
+
+  // ── Todos ──
+  async function loadTodos() {
+    const list = document.getElementById('todo-list');
+    list.innerHTML = '<div class="loading">loading...</div>';
+    try {
+      const res = await fetch(API + '/todos', { headers: { Authorization: 'Bearer ' + token } });
+      if (res.status === 403) return logout();
+      const todos = await res.json();
+      renderTodos(todos);
+    } catch {
+      list.innerHTML = '<div class="loading">failed to load todos</div>';
+    }
+  }
+
+  function renderTodos(todos) {
+    const list = document.getElementById('todo-list');
+    const stats = document.getElementById('stats');
+
+    if (todos.length === 0) {
+      list.innerHTML = '<div class="empty"><div class="icon">✦</div>No todos yet. Add one above.</div>';
+      stats.textContent = '';
+      return;
+    }
+
+    const done = todos.filter(t => t.completed).length;
+    stats.innerHTML = `<span>${done}</span> / ${todos.length} completed`;
+
+    list.innerHTML = todos.map(todo => `
+      <div class="todo-item ${todo.completed ? 'completed' : ''}" id="todo-${todo.id}">
+        <div class="todo-check ${todo.completed ? 'checked' : ''}" onclick="toggleTodo(${todo.id}, ${!todo.completed}, '${escHtml(todo.title)}')"></div>
+        <span class="todo-title" ondblclick="startEdit(${todo.id}, this)">${escHtml(todo.title)}</span>
+        <div class="todo-actions">
+          <button class="btn btn-ghost" style="font-size:0.75rem;padding:4px 10px" onclick="startEdit(${todo.id})">edit</button>
+          <button class="btn btn-danger" onclick="deleteTodo(${todo.id})">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function addTodo() {
+    const input = document.getElementById('new-todo');
+    const title = input.value.trim();
+    if (!title) return;
+    try {
+      const res = await fetch(API + '/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ title })
+      });
+      if (!res.ok) return;
+      input.value = '';
+      loadTodos();
+    } catch {}
+  }
+
+  async function toggleTodo(id, completed, title) {
+    try {
+      await fetch(API + '/todos/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ title, completed })
+      });
+      loadTodos();
+    } catch {}
+  }
+
+  async function deleteTodo(id) {
+    try {
+      await fetch(API + '/todos/' + id, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      loadTodos();
+    } catch {}
+  }
+
+  function startEdit(id, titleEl) {
+    if (editingId === id) return;
+    editingId = id;
+    const item = document.getElementById('todo-' + id);
+    const span = titleEl || item.querySelector('.todo-title');
+    const currentTitle = span.textContent;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'todo-edit-input';
+    input.value = currentTitle;
+
+    span.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const save = async () => {
+      const newTitle = input.value.trim();
+      editingId = null;
+      if (!newTitle || newTitle === currentTitle) { loadTodos(); return; }
+      const completed = item.classList.contains('completed');
+      try {
+        await fetch(API + '/todos/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ title: newTitle, completed })
+        });
+      } finally { loadTodos(); }
+    };
+
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { editingId = null; loadTodos(); } });
+    input.addEventListener('blur', save);
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
