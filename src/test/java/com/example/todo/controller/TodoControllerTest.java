@@ -1,4 +1,4 @@
-package com.example.todo;
+package com.example.todo.controller;
 
 import com.example.todo.config.JwtService;
 import com.example.todo.repository.TodoRepository;
