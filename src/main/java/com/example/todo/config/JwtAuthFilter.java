@@ -39,11 +39,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = authHeader.substring(7); // strip "Bearer "
-        String email = jwtService.extractEmail(token);
+        String token = authHeader.substring(7);
 
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            userRepository.findByEmail(email).ifPresent(user -> {
+        try {
+            String email = jwtService.extractEmail(token);
+//            System.out.println("JWT email extracted: " + email);
+//            System.out.println("JWT valid: " + jwtService.isTokenValid(token, email));
+
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 if (jwtService.isTokenValid(token, email)) {
                     var authToken = new UsernamePasswordAuthenticationToken(
                             new User(email, "", List.of()),
@@ -53,7 +56,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
-            });
+            }
+        } catch (Exception e) {
+            System.out.println("JWT error: " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);
